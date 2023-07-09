@@ -1,16 +1,41 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { AiOutlinePlus } from "react-icons/ai";
 import { AiFillEdit } from "react-icons/ai";
 import { BsFillTrash3Fill } from "react-icons/bs";
 import { useState } from "react";
+import { json } from "react-router-dom";
+//get localstorage dta
+const getLocalData = () => {
+  const lists = localStorage.getItem("mytodolist");
+  if (lists) {
+    return JSON.parse(lists);
+  } else {
+    return [];
+  }
+};
+
 const Todo = () => {
   const [inputdata, setInputData] = useState("");
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState(getLocalData);
+  const [editItem, setEditItem] = useState();
+  const [toogle, setToogle] = useState(false);
 
   // add the items function
   const addItem = () => {
     if (!inputdata) {
       alert("Please Fill the data");
+    } else if (inputdata && toogle) {
+      setItems(
+        items.map((curElem) => {
+          if (curElem.id === editItem) {
+            return { ...curElem, name: inputdata };
+          }
+          return curElem;
+        })
+      );
+      setInputData("");
+      setEditItem(null);
+      setToogle(false);
     } else {
       // to get the unique id for each
       const myNewInputData = {
@@ -18,9 +43,20 @@ const Todo = () => {
         name: inputdata,
       };
       setItems([...items, myNewInputData]);
+
       setInputData("");
     }
   };
+  //edit item
+  const edititem = (index) => {
+    const item_todo_edited = items.find((curElem) => {
+      return curElem.id === index;
+    });
+    setInputData(item_todo_edited.name);
+    setEditItem(index);
+    setToogle(true);
+  };
+
   //delete item
   const deleteItem = (index) => {
     const updatedItem = items.filter((curElem) => {
@@ -33,6 +69,11 @@ const Todo = () => {
   const removeAll = () => {
     setItems([]);
   };
+
+  //adding localstorage
+  useEffect(() => {
+    localStorage.setItem("mytodolist", JSON.stringify(items));
+  }, [items]);
 
   return (
     <div className="text-center  bg-black">
@@ -54,24 +95,38 @@ const Todo = () => {
             value={inputdata}
             onChange={(event) => setInputData(event.target.value)}
           />
-          <i>
-            <AiOutlinePlus
-              className="ml-auto mr-auto text-white mt-1"
-              onClick={addItem}
-            />
-          </i>
+          {toogle ? (
+            <i>
+              <AiFillEdit
+                className="ml-auto mr-auto text-white mt-1"
+                onClick={addItem}
+              />
+            </i>
+          ) : (
+            <i>
+              <AiOutlinePlus
+                className="ml-auto mr-auto text-white mt-1"
+                onClick={addItem}
+              />
+            </i>
+          )}
         </div>
         {/* show our items */}
         <div className="mt-2">
           {items.map((curElem, index) => {
             return (
-              <div className="flex justify-center gap-3 " key={index}>
-                <h3 className="text-white ">{curElem.name}</h3>
-                <AiFillEdit className="text-white mt-1" />
-                <BsFillTrash3Fill
-                  className="text-white mt-1"
-                  onClick={() => deleteItem(curElem.id)}
-                />
+              <div>
+                <div className="flex justify-center gap-3  " key={index}>
+                  <h3 className="text-white ">{curElem.name}</h3>
+                  <AiFillEdit
+                    onClick={() => edititem(curElem.id)}
+                    className="text-white mt-1"
+                  />
+                  <BsFillTrash3Fill
+                    className="text-white mt-1"
+                    onClick={() => deleteItem(curElem.id)}
+                  />
+                </div>
               </div>
             );
           })}
